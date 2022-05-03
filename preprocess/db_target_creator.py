@@ -15,8 +15,8 @@ def create(db_file):
 
 
 def main():
-    data_dir = "./data/wikidump_batched/dump_"
-    db_file = "./data/labels.db"
+    data_dir = "/private/home/millicentli/BERT-kNN/DrQA/data/wikidump_batched/dump_"
+    db_file = "/private/home/millicentli/BERT-kNN/DrQA/data/labels.db"
 
     conn, c = create(db_file)
     for dump in range(100):

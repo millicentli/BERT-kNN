@@ -8,7 +8,8 @@
 import os
 from pathlib import PosixPath
 
-DATA_DIR = "/mounts/data/proj/kassner/DrQA/data"
+# DATA_DIR = "/mounts/data/proj/kassner/DrQA/data"
+DATA_DIR = "/private/home/millicentli/BERT-kNN/DrQA/data"
 
 DEFAULTS = {
     'db_path': os.path.join(DATA_DIR, 'wikipedia/docs.db'),

@@ -75,7 +75,8 @@ def main(path_drqa):
     db_ids = db.get_doc_ids()
     ids_per_dump = int(len(db_ids)/num_dumps) + 1
 
-    save_dir = "./data/wikidump_batched/"
+    # save_dir = "./data/wikidump_batched/"
+    save_dir = "/private/home/millicentli/BERT-kNN/DrQA/data/wikidump_batched/"
     save_file = save_dir + "dump_"
 
     if not os.path.exists(save_dir):
@@ -148,10 +149,10 @@ def main(path_drqa):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--path_db_wirkipedia_drqa",
+    parser.add_argument("--path_db_wikipedia_drqa",
                         default=0,
                         type=str,
                         required=True,
                         help="Path_drqa")
     args = parser.parse_args()
-    main(args.path_db_wirkipedia_drqa)
+    main(args.path_db_wikipedia_drqa)

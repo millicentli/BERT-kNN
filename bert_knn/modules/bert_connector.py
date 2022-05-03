@@ -127,12 +127,16 @@ class Bert(Base_Connector):
         tokenized_text.insert(0, BERT_CLS)
         segments_ids.insert(0,0)
 
+        # print("Here's sentences:", sentences)
+        # print("Here's the tokenized_text:", tokenized_text)
         # look for masked indices
         masked_indices = []
         for i in range(len(tokenized_text)):
             token = tokenized_text[i]
             if token == MASK:
+                # TODO: fix this, it's adding more than one token for some reason???????
                 masked_indices.append(i)
+                break
 
         max_tokens = 512
         if len(tokenized_text) > max_tokens:
@@ -289,6 +293,18 @@ class Bert(Base_Connector):
 
         #sentence_lengths = [len(x) for x in tokenized_text_list]
         hidden = hidden[-2]
+        # print("Here's the hidden:", hidden)
+        # # print("Here's the masked_indices_list:", masked_indices_list)
+        # print("Checking the type in the list:", masked_indices_list)
+        # for i in masked_indices_list:
+        #     print("Type:", type(i[0]))
+        # print("Checking the types:", all(isinstance(x[0], int) for x in masked_indices_list))
+        # # masked_indices_list = masked_indices_list.astype(int)
+        # print("Here's the type:", type(masked_indices_list))
+        # arr = np.array(masked_indices_list)
+        # print("Type of indices:", type(arr))
+        # for i in arr:
+        #     print(type(i))
         hidden = hidden[np.arange(hidden.shape[0]), np.array(masked_indices_list).flatten()]
         #masked_output = all_output[np.arange(all_output.shape[0]), np.array(masked_indices_list).flatten()]
         hidden = hidden.cpu()

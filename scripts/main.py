@@ -122,7 +122,7 @@ def run_experiments(
     return mean_p1, all_Precision1
 
 
-def get_TREx_parameters(data_path_pre="./data/"):
+def get_TREx_parameters(data_path_pre="/private/home/millicentli/BERT-kNN/data/"):
     relations = load_file("{}relations.jsonl".format(data_path_pre))
     data_path_pre += "TREx/"
     data_path_post = ".jsonl"
@@ -139,19 +139,26 @@ def get_GoogleRE_parameters():
     return relations, data_path_pre, data_path_post
 
 
-def get_ConceptNet_parameters(data_path_pre="./data/"):
+def get_ConceptNet_parameters(data_path_pre="/private/home/millicentli/BERT-kNN/data/"):
     relations = [{"relation": "ConceptNet"}]
     data_path_pre += "ConceptNet/"
     data_path_post = ".jsonl"
     return relations, data_path_pre, data_path_post
 
 
-def get_Squad_parameters(data_path_pre="./data/"):
+def get_Squad_parameters(data_path_pre="/private/home/millicentli/BERT-kNN/data/"):
     relations = [{"relation": "Squad"}]
     data_path_pre += "Squad/"
     data_path_post = ".jsonl"
     return relations, data_path_pre, data_path_post
 
+# What I added
+# Dunno if this needs to be changed to jsonl?
+def get_TempLAMA_parameters(data_path_pre="/private/home/millicentli/BERT-kNN/data/"):
+    relations=[{"relation": "TempLAMA"}]
+    data_path_pre += "TempLAMA/"
+    data_path_post = ".json"
+    return relations, data_path_pre, data_path_post
 
 def run_all_LMs(parameters, index_faiss=None, labels_dict_id=None,
                 labels_dict=None):
@@ -161,16 +168,15 @@ def run_all_LMs(parameters, index_faiss=None, labels_dict_id=None,
                         labels_dict_id=labels_dict_id,
                         labels_dict=labels_dict)
 
-
 if __name__ == "__main__":
 
     # load label dict
-    labels_dict_path = "./data/wikidump_batched/dict_id_idcs.json"
+    labels_dict_path = "/private/home/millicentli/BERT-kNN/DrQA/data/wikidump_batched/dump_dict_id_idcs.json"
     with open(labels_dict_path, 'r') as f:
         labels_dict_id = json.load(f)
 
     ranker = retriever.get_class('tfidf')(tfidf_path=None)
-    database_path = "./data/labels.db"
+    database_path = "/private/home/millicentli/BERT-kNN/DrQA/data/labels.db"
     labels_dict = LabelDB(database_path)
 
     print("1. Google-RE")
@@ -192,3 +198,15 @@ if __name__ == "__main__":
     parameters = get_Squad_parameters()
     run_all_LMs(parameters, index_faiss=ranker, labels_dict_id=labels_dict_id,
                 labels_dict=labels_dict)
+
+    # Stuff that I added
+    # print("5. TempQuestions")
+    # parameters = get_TempQuestions_paramters()
+    # run_all_LMs(parameters, index_faiss=ranker, labels_dict_id=labels_dict_id,
+    #             labels_dict=labels_dict)
+
+    # # TODO: two experiments to try -- one without the date and see if the ranker will get the correct result, and one without
+    # print("5. TempLAMA")
+    # parameters = get_TempLAMA_parameters()
+    # run_all_LMs(parameters, index_faiss=ranker, labels_dict_id=labels_dict_id,
+    #             labels_dict=labels_dict)

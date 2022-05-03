@@ -51,15 +51,19 @@ def fvecs_read(fname, count=-1, offset=0):
 
 def interpolate(distances, labels, predictions, topk=10):
     # normalizes NN probs
+    # breakpoint()
     normalized_distances = normalize_exp(distances[0])
     normalized_distances = [[normalized_distances]]
 
     probs_vocab_nn = torch.zeros(predictions.shape)
+
+    # breakpoint()
     unique_predictions = np.unique(labels)
     for p in unique_predictions:
         idcs_unique = np.argwhere(labels == p)
         probs_vocab_nn[p] = sum(normalized_distances[0][0][idcs_unique[0]])
-
+    # print("Here's unique_predictions:", unique_predictions)
+    # print("Here's probs_vocab_nn:", probs_vocab_nn)
     weighted = 0.3
     probs_combined = weighted*probs_vocab_nn + (1-weighted)*predictions
 
@@ -87,7 +91,7 @@ def get_ranking(predictions, log_probs, sample, vocab, ranker, labels_dict_id, l
     experiment_result = {}
     return_msg = ""
 
-    path_vectors = "./data/vectors/vectors_dump_"
+    path_vectors = "/private/home/millicentli/BERT-kNN/DrQA/data/vectors/vectors_dump_"
 
     N = 128
     num_ids = 3
@@ -102,11 +106,18 @@ def get_ranking(predictions, log_probs, sample, vocab, ranker, labels_dict_id, l
     elif "sub" in sample:
         query = sample["sub"]
 
-    doc_names, doc_scores = ranker.closest_docs(query, num_ids)
-    filtered = [(name, score) for (name, score) in zip(doc_names, doc_scores)]
+    # print("Here's the query:", query)
+    # print("Here's the path_vectors:", path_vectors)
 
-    if query.lower() in labels_dict_id and query.lower() not in doc_names:
-        filtered = [(query.lower(), 1.0)]
+    doc_names, doc_scores = ranker.closest_docs(query, num_ids)
+    # print("Here's doc_names:", doc_names)
+    # print("Here's doc_Scores:", doc_scores)
+
+    filtered = [(name, score) for (name, score) in zip(doc_names, doc_scores)]
+    # print("Here's filtered:", filtered)
+
+    # if query.lower() in labels_dict_id and query.lower() not in doc_names:
+        # filtered = [(query.lower(), 1.0)]
     all_idcs = []
     doc_weights = []
     index = faiss.IndexFlatL2(d)
@@ -118,6 +129,8 @@ def get_ranking(predictions, log_probs, sample, vocab, ranker, labels_dict_id, l
             offset = (d+1)*idcs[2]
             xt = fvecs_read(path_vectors + str(idcs[0]) + ".fvecs", count=count, offset=4*offset)
             xt = np.array(xt)
+            # print("Here's xt:", xt)
+            # print("Shape of xt:", xt.shape)
             index.add(xt)
 
             label_idcs = [(idcs[0], c+1) for c in range(idcs[2], len(xt)+idcs[2])]
@@ -126,7 +139,16 @@ def get_ranking(predictions, log_probs, sample, vocab, ranker, labels_dict_id, l
             doc_weights.extend(scores)
 
     # search for NN
+    # breakpoint()
+    # print("Here's predictions.shape:", predictions.shape)
     distances, top_k = index.search(np.array([predictions]), N)
+    # print("Here's distances:", distances)
+    # print("Here's top_k:", top_k)
+    # print("Here's distances.shape:", distances.shape)
+    # print("Here's top_k.shape:", top_k.shape)
+    # print("Here's distances:", distances)
+    # print("Here's top_k:", top_k)
+    # exit()
     idx_cut = len(top_k[0])
     for idx, (k, d) in enumerate(zip(top_k[0], distances[0])):
         if k == -1:
@@ -163,6 +185,9 @@ def get_ranking(predictions, log_probs, sample, vocab, ranker, labels_dict_id, l
     predictions_bert = [vocab_r[idx] for idx in vocab_idcs_bert.tolist()]
     predictions_combined = [vocab_r[idx] for idx in vocab_idcs_combined.tolist()]
     predictions_nn = [vocab_r[idx] for idx in vocab_idcs_nn.tolist()]
+    # print("bert:", vocab_idcs_bert.tolist())
+    # print("nn:", vocab_idcs_nn.tolist())
+    # exit()
     experiment_result["P_AT_1"] = P_AT_1
     experiment_result["P_AT_1_nn"] = P_AT_1_nn
     experiment_result["P_AT_1_bert"] = P_AT_1_bert
