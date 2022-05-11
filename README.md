@@ -1,3 +1,6 @@
+This current work focuses on adapting kNN-LMs for Temporal QA
+
+
 This repository contains code for ["BERT-kNN: Adding a kNN Search Component to Pretrained Language Models for Better QA"](https://arxiv.org/pdf/2005.00766.pdf).
 The repository is forked from https://github.com/facebookresearch/LAMA and adapted accordingly.
 
@@ -29,8 +32,6 @@ git clone https://github.com/facebookresearch/DrQA.git
 
 ### 2. preprocess wikipedia
 ```bash
-# python batch_wikipdia.py --path_db_wirkipedia_drqa "DrAQ/data/wikipedia/docs.db"
-# python batch_wikipedia.py --path_db_wikipedia_drqa "DrQA/data/wikipedia/docs.db"
 python batch_wikipedia.py --path_db_wikipedia_drqa "/private/home/millicentli/BERT-kNN/DrQA/data/wikipedia/docs.db"
 ```
 

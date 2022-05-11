@@ -141,7 +141,6 @@ def batchify(data, batch_size):
 
 def run_thread(arguments):
     msg = ""
-    # breakpoint()
     # 1. compute the ranking metrics on the filtered log_probs tensor
     experiment_result, return_msg = metrics.get_ranking(
         arguments["prediction"],
@@ -152,7 +151,6 @@ def run_thread(arguments):
         arguments["labels_dict_id"],
         arguments["labels_dict"],
         label_index=arguments["label_index"],
-        # print_generation=arguments["interactive"]
     )
     msg += "\n" + return_msg
 
@@ -285,7 +283,17 @@ def main(args, ranker=None, labels_dict_id=None, labels_dict=None,
 
     Precision1 = 0.0
 
-    data = load_file(args.dataset_filename)
+    # data = load_file(args.dataset_filename)
+    # data = [{'sub_label': 'regiomontanus', 'obj_label': 'mathematics', 'masked_sentences': ['regiomontanus works in the field of [MASK]']}]
+
+    # # Google RE test
+    # data = [{'sub_label': 'hans gefors', 'obj_label': 'stockholm', 'masked_sentences': ['hans gefors was born in [MASK].'], 'id':'1'}]
+
+    # # Squad test
+    # data = [{'masked_sentences': ['tesla was in favour of the [MASK] current type.'], 'obj_label': 'alternating', 'id': '5737a7351c456719005744f2_0', 'sub_label': 'Squad'}]
+    
+    # # ConceptNet test
+    # data = [{'pred': 'HasProperty', 'sub_label': 'ears', 'obj_label': 'hear', 'masked_sentences': ['ears can [MASK] sound.'], 'id': '1'}]
 
     if args.lowercase:
         # lowercase all samples
@@ -322,7 +330,6 @@ def main(args, ranker=None, labels_dict_id=None, labels_dict=None,
             )
             all_samples.append(sample)
 
-    # breakpoint()
     # create uuid if not present
     i = 0
     for sample in all_samples:
@@ -342,9 +349,6 @@ def main(args, ranker=None, labels_dict_id=None, labels_dict=None,
     if num_threads <= 0:
         # use all available threads
         num_threads = multiprocessing.cpu_count()
-    # print("Here's num_threads:", num_threads)
-    # exit()
-    # num_threads = 1
     pool = ThreadPool(num_threads)
     list_of_results = []
 
@@ -352,8 +356,6 @@ def main(args, ranker=None, labels_dict_id=None, labels_dict=None,
 
         samples_b = samples_batches[i]
         sentences_b = sentences_batches[i]
-
-        # breakpoint()
 
         pooled_output = model.get_hidden_state(sentences_b, try_cuda=True)
         log_probs_list, masked_indices_list = model.get_batch_generation(sentences_b, logger=logger, try_cuda=True)
@@ -419,8 +421,6 @@ def main(args, ranker=None, labels_dict_id=None, labels_dict=None,
     pool.close()
     pool.join()
 
-    # print("Here's list of results:", list_of_results)
-    # exit()
     Precision1 /= len(list_of_results)
 
     msg = "all_samples: {}\n".format(len(all_samples))

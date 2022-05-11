@@ -60,7 +60,6 @@ def main(num_dump, batch_size=124):
                 fvecs_write(f_out, np.array(out))
                 sentence_batch = []
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dump",

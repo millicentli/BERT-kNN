@@ -184,13 +184,13 @@ if __name__ == "__main__":
     run_all_LMs(parameters, index_faiss=ranker, labels_dict_id=labels_dict_id,
                 labels_dict=labels_dict)
 
-    print("3. ConceptNet")
-    parameters = get_ConceptNet_parameters()
+    print("2. T-REx")
+    parameters = get_TREx_parameters()
     run_all_LMs(parameters, index_faiss=ranker, labels_dict_id=labels_dict_id,
                 labels_dict=labels_dict)
 
-    print("2. T-REx")
-    parameters = get_TREx_parameters()
+    print("3. ConceptNet")
+    parameters = get_ConceptNet_parameters()
     run_all_LMs(parameters, index_faiss=ranker, labels_dict_id=labels_dict_id,
                 labels_dict=labels_dict)
 
@@ -198,12 +198,6 @@ if __name__ == "__main__":
     parameters = get_Squad_parameters()
     run_all_LMs(parameters, index_faiss=ranker, labels_dict_id=labels_dict_id,
                 labels_dict=labels_dict)
-
-    # Stuff that I added
-    # print("5. TempQuestions")
-    # parameters = get_TempQuestions_paramters()
-    # run_all_LMs(parameters, index_faiss=ranker, labels_dict_id=labels_dict_id,
-    #             labels_dict=labels_dict)
 
     # # TODO: two experiments to try -- one without the date and see if the ranker will get the correct result, and one without
     # print("5. TempLAMA")
