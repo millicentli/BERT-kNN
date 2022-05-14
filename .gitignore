@@ -4,3 +4,5 @@ scripts/__pycache__
 DrQA
 data/
 output/
+preprocess/log
+last_results.csv
