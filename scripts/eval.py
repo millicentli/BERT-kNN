@@ -8,7 +8,8 @@ def main():
     path_TREx_relations = "/private/home/millicentli/BERT-kNN/data/relations.jsonl"
     output_path = "/private/home/millicentli/BERT-kNN/output/results/bert_base/"
     relations_GoogleRE = ["place_of_birth", "date_of_birth", "place_of_death"]
-    relations_macro = {"TREx": [], "GoogleRE": relations_GoogleRE, "Squad": ["Squad"], "ConceptNet": ["ConceptNet"]}
+    relations_macro = {"TREx": [], "GoogleRE": relations_GoogleRE, "Squad": ["Squad"], "ConceptNet": ["ConceptNet"], "TempLAMA_filtered": ["TempLAMA_filtered"], "TempLAMA_with_dates_filtered": ["TempLAMA__with_dates_filtered"]}
+    # relations_macro = { "TempLAMA_filtered": ["TempLAMA_filtered"], "TempLAMA_with_dates_filtered": ["TempLAMA_with_dates_filtered"]}
 
     with open(path_TREx_relations, 'r') as json_file:
         json_list = list(json_file)

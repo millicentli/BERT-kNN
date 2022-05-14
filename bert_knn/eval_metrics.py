@@ -93,7 +93,7 @@ def get_ranking(predictions, log_probs, sample, vocab, ranker, labels_dict_id, l
     num_ids = 3
     d = 768
     if "sub_label" in sample:
-        if sample["sub_label"] == "squad":
+        if sample["sub_label"] == "squad" or sample["sub_label"] == "templama":
             query = sample["masked_sentences"][0]
             query = query.replace("[MASK]", "")
             query = query.replace(".", "")
@@ -146,7 +146,6 @@ def get_ranking(predictions, log_probs, sample, vocab, ranker, labels_dict_id, l
             label_tokens.append(label_token)
 
     distances = [distances[0][0:idx_cut]]
-
     vocab_idcs_combined, probs_combined, vocab_idcs_bert, probs_bert, vocab_idcs_nn, probs_nn = \
         interpolate(distances, labels, log_probs)
 
@@ -179,6 +178,5 @@ def get_ranking(predictions, log_probs, sample, vocab, ranker, labels_dict_id, l
     experiment_result["probs_combined"] = probs_combined.tolist()
     experiment_result["document_scores"] = list(doc_scores)
     experiment_result["labels"] = label_tokens
-
     experiment_result["sample"] = sample["masked_sentences"]
     return experiment_result, return_msg

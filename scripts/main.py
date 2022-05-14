@@ -154,8 +154,20 @@ def get_Squad_parameters(data_path_pre="/private/home/millicentli/BERT-kNN/data/
 
 # What I added
 # Dunno if this needs to be changed to jsonl?
-def get_TempLAMA_parameters(data_path_pre="/private/home/millicentli/BERT-kNN/data/"):
-    relations=[{"relation": "TempLAMA"}]
+# def get_TempLAMA_parameters(data_path_pre="/private/home/millicentli/BERT-kNN/data/"):
+#     relations=[{"relation": "TempLAMA"}]
+#     data_path_pre += "TempLAMA/"
+#     data_path_post = ".json"
+#     return relations, data_path_pre, data_path_post
+
+def get_TempLAMA_filtered_parameters(data_path_pre="/private/home/millicentli/BERT-kNN/data/"):
+    relations=[{"relation": "TempLAMA_filtered"}]
+    data_path_pre += "TempLAMA/"
+    data_path_post = ".json"
+    return relations, data_path_pre, data_path_post
+
+def get_TempLAMA_filtered_with_dates_parameters(data_path_pre="/private/home/millicentli/BERT-kNN/data/"):
+    relations=[{"relation": "TempLAMA_with_dates_filtered"}]
     data_path_pre += "TempLAMA/"
     data_path_post = ".json"
     return relations, data_path_pre, data_path_post
@@ -179,28 +191,33 @@ if __name__ == "__main__":
     database_path = "/private/home/millicentli/BERT-kNN/DrQA/data/labels.db"
     labels_dict = LabelDB(database_path)
 
-    print("1. Google-RE")
-    parameters = get_GoogleRE_parameters()
-    run_all_LMs(parameters, index_faiss=ranker, labels_dict_id=labels_dict_id,
-                labels_dict=labels_dict)
+    # print("1. Google-RE")
+    # parameters = get_GoogleRE_parameters()
+    # run_all_LMs(parameters, index_faiss=ranker, labels_dict_id=labels_dict_id,
+    #             labels_dict=labels_dict)
 
-    print("2. T-REx")
-    parameters = get_TREx_parameters()
-    run_all_LMs(parameters, index_faiss=ranker, labels_dict_id=labels_dict_id,
-                labels_dict=labels_dict)
+    # print("2. T-REx")
+    # parameters = get_TREx_parameters()
+    # run_all_LMs(parameters, index_faiss=ranker, labels_dict_id=labels_dict_id,
+    #             labels_dict=labels_dict)
 
-    print("3. ConceptNet")
-    parameters = get_ConceptNet_parameters()
-    run_all_LMs(parameters, index_faiss=ranker, labels_dict_id=labels_dict_id,
-                labels_dict=labels_dict)
+    # print("3. ConceptNet")
+    # parameters = get_ConceptNet_parameters()
+    # run_all_LMs(parameters, index_faiss=ranker, labels_dict_id=labels_dict_id,
+    #             labels_dict=labels_dict)
 
-    print("4. SQuAD")
-    parameters = get_Squad_parameters()
-    run_all_LMs(parameters, index_faiss=ranker, labels_dict_id=labels_dict_id,
-                labels_dict=labels_dict)
+    # print("4. SQuAD")
+    # parameters = get_Squad_parameters()
+    # run_all_LMs(parameters, index_faiss=ranker, labels_dict_id=labels_dict_id,
+    #             labels_dict=labels_dict)
 
     # # TODO: two experiments to try -- one without the date and see if the ranker will get the correct result, and one without
-    # print("5. TempLAMA")
-    # parameters = get_TempLAMA_parameters()
+    print("5. TempLAMA_Filtered")
+    parameters = get_TempLAMA_filtered_parameters()
+    run_all_LMs(parameters, index_faiss=ranker, labels_dict_id=labels_dict_id,
+                labels_dict=labels_dict)
+
+    # print("6. TempLAMA_With_Dates_Filtered")
+    # parameters = get_TempLAMA_filtered_with_dates_parameters()
     # run_all_LMs(parameters, index_faiss=ranker, labels_dict_id=labels_dict_id,
     #             labels_dict=labels_dict)

@@ -262,7 +262,6 @@ def main(args, ranker=None, labels_dict_id=None, labels_dict=None,
     msg = ""
 
     [model_type_name] = args.models_names
-
     if model is None:
         model = build_model_by_name(model_type_name, args)
 
@@ -283,7 +282,17 @@ def main(args, ranker=None, labels_dict_id=None, labels_dict=None,
 
     Precision1 = 0.0
 
-    # data = load_file(args.dataset_filename)
+    data = load_file(args.dataset_filename)
+    # data = [data[0]]
+    # data_w_date = data[0].copy()
+
+    # Appended to beginning
+    # data_w_date['masked_sentences'] = [f"{data_w_date['date']}. {data_w_date['masked_sentences'][0]}"]
+    # Appended to the end
+    # data_w_date['masked_sentences'] = [f"{data_w_date['masked_sentences'][0][:-1]} in {data_w_date['date']}"]
+    # data.append(data_w_date)
+    # data[0] = data_w_date
+
     # data = [{'sub_label': 'regiomontanus', 'obj_label': 'mathematics', 'masked_sentences': ['regiomontanus works in the field of [MASK]']}]
 
     # # Google RE test

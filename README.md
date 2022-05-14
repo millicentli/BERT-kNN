@@ -5,6 +5,11 @@ This repository contains code for ["BERT-kNN: Adding a kNN Search Component to P
 The repository is forked from https://github.com/facebookresearch/LAMA and adapted accordingly.
 
 ## Setup
+### 0. Pre-setup
+Before running anything, run this command:
+```
+export PYTHONPATH="."
+```
 ### 1. Create conda environment and install requirements
 
 (optional) It might be a good idea to use a separate conda environment. It can be created by running:
