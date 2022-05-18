@@ -76,12 +76,12 @@ class Bert(Base_Connector):
         final_attention_mask = None
         for tokens_tensor, segments_tensor in zip(tokens_tensors_list, segments_tensors_list):
             dim_tensor = tokens_tensor.shape[1]
-            pad_lenght = max_tokens - dim_tensor
-            attention_tensor = torch.full([1,dim_tensor], 1, dtype= torch.long)
-            if pad_lenght>0:
-                pad_1 = torch.full([1,pad_lenght], self.pad_id, dtype= torch.long)
-                pad_2 = torch.full([1,pad_lenght], 0, dtype= torch.long)
-                attention_pad = torch.full([1,pad_lenght], 0, dtype= torch.long)
+            pad_length = max_tokens - dim_tensor
+            attention_tensor = torch.full([1,dim_tensor], 1, dtype=torch.long)
+            if pad_length > 0:
+                pad_1 = torch.full([1,pad_length], self.pad_id, dtype=torch.long)
+                pad_2 = torch.full([1,pad_length], 0, dtype=torch.long)
+                attention_pad = torch.full([1,pad_length], 0, dtype=torch.long)
                 tokens_tensor = torch.cat((tokens_tensor,pad_1), dim=1)
                 segments_tensor = torch.cat((segments_tensor,pad_2), dim=1)
                 attention_tensor = torch.cat((attention_tensor,attention_pad), dim=1)
