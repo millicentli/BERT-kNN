@@ -10,6 +10,7 @@ import time
 from tqdm import tqdm
 
 from bert_knn.modules import build_model_by_name
+from bert_knn.modules.base_connector import MASK, MASK_T5
 import bert_knn.options as options
 import bert_knn.eval_metrics as metrics
 import bert_knn.modules.base_connector as base
@@ -177,7 +178,7 @@ def lowercase_samples(samples):
 def filter_samples(model, samples, vocab_subset, max_sentence_length, template):
     msg = ""
     new_samples = []
-    samples_exluded = 0
+    samples_excluded = 0
     for sample in samples:
 
         excluded = False
@@ -186,11 +187,11 @@ def filter_samples(model, samples, vocab_subset, max_sentence_length, template):
             obj_label_ids = model.get_id(sample["obj_label"])
 
             if obj_label_ids:
-                recostructed_word = " ".join(
+                reconstructed_word = " ".join(
                     [model.vocab[x] for x in obj_label_ids]
-                ).strip()
+                ).strip().replace("▁", "")
             else:
-                recostructed_word = None
+                reconstructed_word = None
 
             excluded = False
             if not template or len(template) == 0:
@@ -200,7 +201,7 @@ def filter_samples(model, samples, vocab_subset, max_sentence_length, template):
                     msg += "\tEXCLUDED for exeeding max sentence length: {}\n".format(
                         masked_sentences
                     )
-                    samples_exluded += 1
+                    samples_excluded += 1
                     excluded = True
 
             # MAKE SURE THAT obj_label IS IN VOCABULARIES
@@ -211,7 +212,7 @@ def filter_samples(model, samples, vocab_subset, max_sentence_length, template):
                         msg += "\tEXCLUDED object label {} not in vocab subset\n".format(
                             sample["obj_label"]
                         )
-                        samples_exluded += 1
+                        samples_excluded += 1
                         break
 
             if excluded:
@@ -220,12 +221,13 @@ def filter_samples(model, samples, vocab_subset, max_sentence_length, template):
                 msg += "\tEXCLUDED object label {} not in model vocabulary\n".format(
                     sample["obj_label"]
                 )
-                samples_exluded += 1
-            elif not recostructed_word or recostructed_word != sample["obj_label"]:
+                samples_excluded += 1
+            # TODO: check this, I changed this in case we wanted to support uppercase
+            elif not reconstructed_word or reconstructed_word.lower() != sample["obj_label"].lower():
                 msg += "\tEXCLUDED object label {} not in model vocabulary\n".format(
                     sample["obj_label"]
                 )
-                samples_exluded += 1
+                samples_excluded += 1
 
             elif "judgments" in sample:
                 # only for Google-RE
@@ -247,8 +249,8 @@ def filter_samples(model, samples, vocab_subset, max_sentence_length, template):
             msg += "\tEXCLUDED since 'obj_label' not sample or 'sub_label' not in sample: {}\n".format(
                 sample
             )
-            samples_exluded += 1
-    msg += "samples exluded  : {}\n".format(samples_exluded)
+            samples_excluded += 1
+    msg += "samples excluded  : {}\n".format(samples_excluded)
     return new_samples, msg
 
 
@@ -267,6 +269,10 @@ def main(args, ranker=None, labels_dict_id=None, labels_dict=None,
 
     elif model_type_name == "bert":
         model_name = "BERT_{}".format(args.bert_model_name)
+        mask_tok = MASK
+    elif model_type_name == "t5":
+        model_name = "T5_{}".format(args.t5_model_name)
+        mask_tok = MASK_T5
 
     # initialize logging
     if args.full_logdir:
@@ -282,7 +288,7 @@ def main(args, ranker=None, labels_dict_id=None, labels_dict=None,
 
     Precision1 = 0.0
 
-    data = load_file(args.dataset_filename)
+    # data = load_file(args.dataset_filename)
     # data = [data[0]]
     # data_w_date = data[0].copy()
 
@@ -296,7 +302,8 @@ def main(args, ranker=None, labels_dict_id=None, labels_dict=None,
     # data = [{'sub_label': 'regiomontanus', 'obj_label': 'mathematics', 'masked_sentences': ['regiomontanus works in the field of [MASK]']}]
 
     # # Google RE test
-    # data = [{'sub_label': 'hans gefors', 'obj_label': 'stockholm', 'masked_sentences': ['hans gefors was born in [MASK].'], 'id':'1'}]
+    data = [{'sub_label': 'hans gefors', 'obj_label': 'stockholm', 'masked_sentences': ['hans gefors was born in [MASK].'], 'id':'1'}]
+    # data = [{'sub_label': 'Hans Gefors', 'obj_label': 'Stockholm', 'masked_sentences': ['Hans Gefors was born in [MASK].'], 'id':'1'}]
 
     # # Squad test
     # data = [{'masked_sentences': ['tesla was in favour of the [MASK] current type.'], 'obj_label': 'alternating', 'id': '5737a7351c456719005744f2_0', 'sub_label': 'Squad'}]
@@ -335,7 +342,7 @@ def main(args, ranker=None, labels_dict_id=None, labels_dict=None,
             sample = {"sub_label": sub, "obj_label": obj}
             # substitute all sentences with a standard template
             sample["masked_sentences"] = parse_template(
-                args.template.strip(), sample["sub_label"].strip(), base.MASK
+                args.template.strip(), sample["sub_label"].strip(), mask_tok
             )
             all_samples.append(sample)
 
@@ -381,7 +388,7 @@ def main(args, ranker=None, labels_dict_id=None, labels_dict=None,
                         sample["obj_label"]
                     )
                 )
-            elif model.vocab[obj_label_id[0]] != sample["obj_label"]:
+            elif model.vocab[obj_label_id[0]].replace("▁", "") != sample["obj_label"]:
                 raise ValueError(
                     "object label {} not in model vocabulary".format(
                         sample["obj_label"]
@@ -393,7 +400,7 @@ def main(args, ranker=None, labels_dict_id=None, labels_dict=None,
                 "prediction": prediction,
                 "log_probs": log_probs,
                 "masked_indices": masked_indices,
-                "vocab": model.tokenizer.vocab,
+                "vocab": model.tokenizer.get_vocab() if model_type_name == "t5" else model.tokenizer.vocab,
                 "label_index": label_index[0],
                 "sample": sample,
                 "ranker": ranker,

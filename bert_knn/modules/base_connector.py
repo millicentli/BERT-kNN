@@ -1,11 +1,20 @@
 import re
 import torch
 
+# BERT things
 MASK = "[MASK]"
+MASK_T5 = "<extra_id_0>"
+
 BERT_UNK = "[UNK]"
 BERT_CLS = "[CLS]"
 BERT_SEP = "[SEP]"
 BERT_PAD = "[PAD]"
+
+# T5 things
+T5_UNK = "<unk>"
+T5_EOS = "</s>"
+T5_SEP = "<s>"
+T5_PAD = "<pad>"
 
 SPECIAL_SYMBOLS = [
     MASK,
@@ -13,7 +22,11 @@ SPECIAL_SYMBOLS = [
     BERT_CLS,
     BERT_SEP,
     BERT_PAD,
-    ]
+    T5_UNK,
+    T5_EOS,
+    T5_SEP,
+    T5_PAD,
+]
 
 SPACE_NORMALIZER = re.compile(r"\s+")
 

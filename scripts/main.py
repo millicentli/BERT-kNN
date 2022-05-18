@@ -26,10 +26,17 @@ LMs = [
         "models_names": ["bert"],
         "bert_model_name":
         "bert-base-uncased",
-    }
-
+    },
+    # {
+    #     "lm":
+    #     "t5",
+    #     "label":
+    #     "t5-small",
+    #     "models_names": ["t5"],
+    #     "t5_model_name":
+    #     "t5-small",
+    # }
 ]
-
 
 def run_experiments(
     relations,
@@ -61,7 +68,7 @@ def run_experiments(
             "full_logdir": "output/results/{}/{}".format(
                 input_param["label"], relation["relation"]
             ),
-            "lowercase": True,
+            "lowercase": False,
             "max_sentence_length": 100,
             "threads": -1,
             "interactive": False,
@@ -81,7 +88,6 @@ def run_experiments(
             print("Relation {} excluded.".format(relation["relation"]))
             print("Exception: {}".format(e))
             continue
-
         if model is None:
             [model_type_name] = args.models_names
             model = build_model_by_name(model_type_name, args)
