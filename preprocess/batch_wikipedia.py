@@ -109,7 +109,6 @@ def masking(args):
             sents = ""
             labels = ""
             dbids = ""
-            # breakpoint()
             for sentence in sentences:
                 sentence = sentence.strip()
                 tokens = tokenizer(sentence)
