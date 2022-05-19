@@ -93,7 +93,13 @@ def masking(args):
 
     print(f"Save_ids: {save_idx}. Curr_idx: {curr_idx}.")
     start = time.time()
-    for idx in range(curr_idx, curr_idx + ids_per_dump):
+    num_sents = len(db_ids[curr_idx:])
+    if num_sents < curr_idx + ids_per_dump:
+        end = curr_idx + num_sents
+    else:
+        end = curr_idx + ids_per_dump
+
+    for idx in range(curr_idx, end):
         _id = db_ids[idx]
         raw_text = db.get_doc_text(_id)
         raw_list = raw_text.split("\n")
@@ -166,11 +172,15 @@ def main(args):
     save_files_sentences = {}
     save_files_labels = {}
     save_files_dbids = {}
-    for n in range(len(db_ids) // ids_per_dump + 1):
-        if not os.path.exists(save_dir + str(n) + "_dbids.txt"):
-            save_files_dbids[n] = open(save_file + str(n) + "_dbids.txt", "w")
-            save_files_sentences[n] = open(save_file + str(n) + "_sentences.txt", "w")
-            save_files_labels[n] = open(save_file + str(n) + "_labels.txt", "w")
+    # for n in range(len(db_ids) // ids_per_dump + 1):
+        # if not os.path.exists(save_dir + str(n) + "_dbids.txt"):
+        #     save_files_dbids[n] = open(save_file + str(n) + "_dbids.txt", "w")
+        #     save_files_sentences[n] = open(save_file + str(n) + "_sentences.txt", "w")
+        #     save_files_labels[n] = open(save_file + str(n) + "_labels.txt", "w")
+    if not os.path.exists(save_dir + str(99) + "_dbids.txt"):
+        save_files_dbids[99] = open(save_file + str(99) + "_dbids.txt", "w")
+        save_files_sentences[99] = open(save_file + str(99) + "_sentences.txt", "w")
+        save_files_labels[99] = open(save_file + str(99) + "_labels.txt", "w")
 
     stop_words = set(stopwords.words('english'))
 
@@ -179,23 +189,36 @@ def main(args):
     # Cap it at half the number of dumps for efficiency
     if num_threads > 50:
         num_threads = 50
+    num_threads = 1
     pool = ThreadPool(num_threads)
 
     print(f"Starting multithreading with {num_threads} threads")
     print("Start masking!")
 
+    # args = [{
+    #     "db": db,
+    #     "db_ids": db_ids,
+    #     "save_idx": idx,
+    #     "ids_per_dump": ids_per_dump,
+    #     "stop_words": stop_words,
+    #     "save_files_sentences": save_files_sentences[idx],
+    #     "save_files_labels": save_files_labels[idx],
+    #     "save_files_dbids": save_files_dbids[idx],
+    #     "model_type": model_type
+    # } for idx in range(len(db_ids) // ids_per_dump + 1)]
+    
     args = [{
         "db": db,
         "db_ids": db_ids,
-        "save_idx": idx,
+        "save_idx": 99,
         "ids_per_dump": ids_per_dump,
         "stop_words": stop_words,
-        "save_files_sentences": save_files_sentences[idx],
-        "save_files_labels": save_files_labels[idx],
-        "save_files_dbids": save_files_dbids[idx],
+        "save_files_sentences": save_files_sentences[99],
+        "save_files_labels": save_files_labels[99],
+        "save_files_dbids": save_files_dbids[99],
         "model_type": model_type
-    } for idx in range(len(db_ids) // ids_per_dump + 1)]
-    
+    }]
+
     pool.map(masking, args)
 
     pool.close()
