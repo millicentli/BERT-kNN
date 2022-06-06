@@ -30,7 +30,7 @@ def main(num_dump, batch_size=124):
 
     print("DUMP: ", num_dump)
 
-    data_file = "/private/home/millicentli/BERT-kNN/DrQA/data/wikidump_batched/dump_"
+    data_file = "/private/home/millicentli/BERT-kNN/DrQA/data/test_multimasking_batched/dump_"
     save_dir = "/private/home/millicentli/BERT-kNN/DrQA/data/vectors/"
     save_file = save_dir + "vectors_dump_"
     if not os.path.exists(save_dir):

@@ -56,6 +56,7 @@ def interpolate(distances, labels, predictions, topk=10):
 
     probs_vocab_nn = torch.zeros(predictions.shape)
 
+    # breakpoint()
     unique_predictions = np.unique(labels)
     for p in unique_predictions:
         idcs_unique = np.argwhere(labels == p)
@@ -84,19 +85,26 @@ def get_ranking(predictions, log_probs, sample, vocab, ranker, labels_dict_id, l
     sentences = []
     label_tokens = []
 
+    all_bert_preds = []
+    all_combined_preds = []
+    all_nn_preds = []
+    
+    all_probs_bert = []
+    all_probs_combined = []
+    all_probs_nn = []
+
     experiment_result = {}
     return_msg = ""
 
     path_vectors = "/private/home/millicentli/BERT-kNN/DrQA/data/vectors/vectors_dump_"
-
     N = 128
     num_ids = 3
     d = 768
     if "sub_label" in sample:
-        if sample["sub_label"] == "squad" or sample["sub_label"] == "templama":
+        if sample["sub_label"] == "squad":
             query = sample["masked_sentences"][0]
             query = query.replace("[MASK]", "")
-            query = query.replace(".", "")
+            query = query.replace(".", "").strip()
         else:
             query = sample["sub_label"]
     elif "sub" in sample:
@@ -128,55 +136,89 @@ def get_ranking(predictions, log_probs, sample, vocab, ranker, labels_dict_id, l
             doc_weights.extend(scores)
 
     # search for NN
-    distances, top_k = index.search(np.array([predictions]), N)
+    # Do it per prediction
+    predictions = predictions.reshape(-1, 768)
+    if len(log_probs.shape) == 1:
+        log_probs = torch.unsqueeze(log_probs, 0)
+    log_probs = log_probs.reshape(-1, log_probs.shape[1])
 
-    idx_cut = len(top_k[0])
-    for idx, (k, d) in enumerate(zip(top_k[0], distances[0])):
-        if k == -1:
-            idx_cut = idx
-            break
-        else:
+    for i in range(log_probs.size(0)):
+        curr_labels = []
+        curr_label_tokens = []
+        # breakpoint()
+        distances, top_k = index.search(np.array([predictions[i, :]]), N)
+        idx_cut = len(top_k[0])
+        for idx, (k, d) in enumerate(zip(top_k[0], distances[0])):
+            if k == -1:
+                idx_cut = idx
+                break
+            else:
 
-            label_idx = all_idcs[k]
-            instance_id = "{:02}_{:08}".format(label_idx[0], label_idx[1])
-            label_token = labels_dict.get_labels(instance_id).strip()
-            label_vocab_idx = vocab[label_token]
-            labels.append(int(label_vocab_idx))
-            sentences.append(label_idx)
-            label_tokens.append(label_token)
+                label_idx = all_idcs[k]
+                instance_id = "{:02}_{:08}".format(label_idx[0], label_idx[1])
+                label_token = labels_dict.get_labels(instance_id).strip()
+                label_vocab_idx = vocab[label_token]
+                labels.append(int(label_vocab_idx))
+                curr_labels.append(int(label_vocab_idx))
+                sentences.append(label_idx)
+                label_tokens.append(label_token)
+                curr_label_tokens.append(label_token)
 
-    distances = [distances[0][0:idx_cut]]
-    vocab_idcs_combined, probs_combined, vocab_idcs_bert, probs_bert, vocab_idcs_nn, probs_nn = \
-        interpolate(distances, labels, log_probs)
+        distances = [distances[0][0:idx_cut]]
+        vocab_idcs_combined, probs_combined, vocab_idcs_bert, probs_bert, vocab_idcs_nn, probs_nn = \
+            interpolate(distances, curr_labels, log_probs[i])
 
-    if label_index is not None:
+        if label_index is not None:
 
-        # check if the labe_index should be converted to the vocab subset
-        if index_list is not None:
-            label_index = index_list.index(label_index)
-        if len(labels) > 0:
-            if label_index == vocab_idcs_nn[0]:
-                P_AT_1_nn = 1.
-            if label_index == vocab_idcs_combined[0]:
-                P_AT_1 = 1.
-            if label_index in vocab_idcs_bert[0]:
-                P_AT_1_bert = 1.
+            # check if the labe_index should be converted to the vocab subset
+            if index_list is not None:
+                label_index = index_list.index(label_index)
+            if len(curr_labels) > 0:
+                if label_index == vocab_idcs_nn[0]:
+                    P_AT_1_nn = 1.
+                if label_index == vocab_idcs_combined[0]:
+                    P_AT_1 = 1.
+                if label_index in vocab_idcs_bert[0]:
+                    P_AT_1_bert = 1.
 
-    predictions_bert = [vocab_r[idx] for idx in vocab_idcs_bert.tolist()]
-    predictions_combined = [vocab_r[idx] for idx in vocab_idcs_combined.tolist()]
-    predictions_nn = [vocab_r[idx] for idx in vocab_idcs_nn.tolist()]
+        predictions_bert = [vocab_r[idx] for idx in vocab_idcs_bert.tolist()]
+        predictions_combined = [vocab_r[idx] for idx in vocab_idcs_combined.tolist()]
+        predictions_nn = [vocab_r[idx] for idx in vocab_idcs_nn.tolist()]
+
+        experiment_result["topk_bert"] = predictions_bert
+        experiment_result["topk_combined"] = predictions_combined
+        experiment_result["topk_nn"] = predictions_nn
+        experiment_result["probs_nn"] = probs_nn.tolist()
+        experiment_result["probs_bert"] = probs_bert.tolist()
+        experiment_result["probs_combined"] = probs_combined.tolist()
+
+        all_bert_preds.append(predictions_bert)
+        all_combined_preds.append(predictions_combined)
+        all_nn_preds.append(predictions_nn)
+
+        all_probs_bert.append(probs_bert)
+        all_probs_combined.append(probs_combined)
+        all_probs_nn.append(probs_nn)
+
     experiment_result["P_AT_1"] = P_AT_1
     experiment_result["P_AT_1_nn"] = P_AT_1_nn
     experiment_result["P_AT_1_bert"] = P_AT_1_bert
-
     experiment_result["documents"] = list(doc_names)
-    experiment_result["topk_bert"] = predictions_bert
-    experiment_result["topk_combined"] = predictions_combined
-    experiment_result["topk_nn"] = predictions_nn
-    experiment_result["probs_nn"] = probs_nn.tolist()
-    experiment_result["probs_bert"] = probs_bert.tolist()
-    experiment_result["probs_combined"] = probs_combined.tolist()
+
+    topk_all = []
+    for idx, (bert, comb, nn) in enumerate(zip(all_bert_preds, all_combined_preds, all_nn_preds)):
+        experiment_result[f"topk_bert_{idx}"] = bert
+        experiment_result[f"topk_combined_{idx}"] = comb
+        experiment_result[f"topk_nn_{idx}"] = nn
+        topk_all.append((bert[idx], comb[idx], nn[idx]))
+    topk_all = list(zip(*topk_all))
+
     experiment_result["document_scores"] = list(doc_scores)
-    experiment_result["labels"] = label_tokens
+    experiment_result["all_labels"] = label_tokens
     experiment_result["sample"] = sample["masked_sentences"]
+    experiment_result["answer"] = sample["obj_label"]
+    experiment_result["generated_bert"] = ' '.join(topk_all[0])
+    experiment_result["generated_combined"] = ' '.join(topk_all[1])
+    experiment_result["generated_nn"] = ' '.join(topk_all[2])
+    
     return experiment_result, return_msg

@@ -5,6 +5,7 @@ import numpy as np
 import os
 import pickle
 from random import shuffle
+import re
 import sys
 import time
 from tqdm import tqdm
@@ -119,6 +120,7 @@ def batchify(data, batch_size):
     for sample in sorted(
         data, key=lambda k: len(" ".join(k["masked_sentences"]).split())
     ):
+        sample["masked_sentences"] = [sample["masked_sentences"][0].replace("[MASK]", ("[MASK] " * len(sample["obj_label"].split())).strip())]
         masked_sentences = sample["masked_sentences"]
         current_samples_batch.append(sample)
         current_sentences_batches.append(masked_sentences)
@@ -303,6 +305,10 @@ def main(args, ranker=None, labels_dict_id=None, labels_dict=None,
     
     # # ConceptNet test
     # data = [{'pred': 'HasProperty', 'sub_label': 'ears', 'obj_label': 'hear', 'masked_sentences': ['ears can [MASK] sound.'], 'id': '1'}]
+    
+    # TempLAMA multi test
+    # data = [{'masked_sentences': ['Ronaldo plays for [MASK].'], 'obj_label': 'brazil national football team', 'id': 'Q529207_P54_2010', 'date': '2010', 'sub_label': 'templama', 'uuid': 72}]
+    # data = [{"masked_sentences": ["Tom Brady plays for [MASK]."], "obj_label": "New England Patriots", "id": "Q313381_P54_2010", "date": "2010", "sub_label": "Tom Brady", "type": "TempLAMA"}]
 
     if args.lowercase:
         # lowercase all samples
@@ -358,6 +364,7 @@ def main(args, ranker=None, labels_dict_id=None, labels_dict=None,
     if num_threads <= 0:
         # use all available threads
         num_threads = multiprocessing.cpu_count()
+    # num_threads = 1
     pool = ThreadPool(num_threads)
     list_of_results = []
 
@@ -366,8 +373,14 @@ def main(args, ranker=None, labels_dict_id=None, labels_dict=None,
         samples_b = samples_batches[i]
         sentences_b = sentences_batches[i]
 
-        pooled_output = model.get_hidden_state(sentences_b, try_cuda=True)
-        log_probs_list, masked_indices_list = model.get_batch_generation(sentences_b, logger=logger, try_cuda=True)
+        # If not templama?
+        if not "type" in samples_b[0]:
+            pooled_output = model.get_hidden_state(sentences_b, try_cuda=True)
+            log_probs_list, masked_indices_list = model.get_batch_generation(sentences_b, logger=logger, try_cuda=True)
+        else:
+            # If templama?
+            log_probs_list, masked_indices_list, pooled_output = model.get_generation_multi_token(sentences_b, logger=logger, try_cuda=True)
+
         xq = sanitize(pooled_output)
 
         label_index_list = []
@@ -381,12 +394,25 @@ def main(args, ranker=None, labels_dict_id=None, labels_dict=None,
                         sample["obj_label"]
                     )
                 )
-            elif model.vocab[obj_label_id[0]] != sample["obj_label"]:
+            # in_vocab = [model.vocab[obj_label_id[i]] for i in obj_label_id]
+
+            # Multi-tokens are OK!
+            in_vocab = [i < len(model.vocab) for i in obj_label_id]
+            if not all(in_vocab):
                 raise ValueError(
                     "object label {} not in model vocabulary".format(
                         sample["obj_label"]
                     )
                 )
+            # elif model.vocab[obj_label_id[0]] != sample["obj_label"]:
+            #     raise ValueError(
+            #         "object label {} not in model vocabulary".format(
+            #             sample["obj_label"]
+            #         )
+            #     )
+
+            # breakpoint()
+            # sample["masked_sentences"][0] = " ".join(sample["masked_sentences"].split(" "))
 
             label_index_list.append(obj_label_id)
             arguments = [{

@@ -15,7 +15,7 @@ def create(db_file):
 
 
 def main():
-    data_dir = "/private/home/millicentli/BERT-kNN/DrQA/data/wikidump_batched/dump_"
+    data_dir = "/private/home/millicentli/BERT-kNN/DrQA/data/test_multimasking_batched/dump_"
     db_file = "/private/home/millicentli/BERT-kNN/DrQA/data/labels.db"
 
     conn, c = create(db_file)
