@@ -15,11 +15,14 @@ def create(db_file):
 
 
 def main():
-    data_dir = "/private/home/millicentli/BERT-kNN/DrQA/data/test_multimasking_batched/dump_"
-    db_file = "/private/home/millicentli/BERT-kNN/DrQA/data/labels.db"
+    # data_dir = "/private/home/millicentli/BERT-kNN/DrQA/data/wikidump_batched/dump_"
+    data_dir = "/private/home/millicentli/BERT-kNN/DrQA/data/test_multimasking_stuff/test_multimasking_batched/dump_"
+    # db_file = "/private/home/millicentli/BERT-kNN/DrQA/data/labels.db"
+    db_file = "/private/home/millicentli/BERT-kNN/DrQA/data/test_multimasking_stuff/labels.db"
 
     conn, c = create(db_file)
-    for dump in range(100):
+    # for dump in range(100):
+    for dump in [2, 3, 70]:
         data = []
         with open(data_dir + str(dump) + "_labels.txt") as f:
             for idx, line in enumerate(f):

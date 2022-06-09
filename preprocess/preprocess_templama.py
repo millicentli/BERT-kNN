@@ -8,11 +8,14 @@ Copy the Squad dataset -- minimum requirements:
 
 Format:
 "masked_sentences": [""], "obj_label": "", "id":, "", "sub_label", ""
+
+python preprocess_templama.py --file_name /private/home/millicentli/BERT-kNN/data/TempLAMA/test.json
 """
 
 import argparse
 import json
 import os
+import re
 
 from transformers import BertTokenizer
 
@@ -29,7 +32,7 @@ def main():
     parser.add_argument("--filter_multi_word", action='store_true')
     parser.add_argument("--model_name", type=str, default="bert-base-uncased")
     args = parser.parse_args()
-    
+
     save_dir = "/".join(args.file_name.split("/")[:-1])
     # breakpoint()
     if not args.with_dates and not args.filter_multi_word:
@@ -64,6 +67,13 @@ def main():
         # obj_label
         label = loaded['answer'][0]['name']
 
+        # sub_label
+        sub_indices = [x.span() for x in re.finditer('([A-ZÀ-ÖØ][a-zA-ZÀ-ÖØ-öø-ÿ]+)', query)]
+        if len(sub_indices) > 2:
+            sub_label = query[sub_indices[0][0] : sub_indices[len(sub_indices) - 2][1]]
+        else:
+            sub_label = query[sub_indices[0][0] : sub_indices[0][1]]
+
         # skip if the word is too big
         if args.filter_multi_word:
             res = get_sample(tokenizer, label)
@@ -80,9 +90,9 @@ def main():
         # if it's TempLAMA, we're just going to use the context (like for Squad)
         if args.with_dates:
             context = f"{date}. {query}"
-            new_line = {"masked_sentences": [context], "obj_label": label, "id": id, "date": date, "sub_label": "TempLAMA"}
+            new_line = {"masked_sentences": [context], "obj_label": label, "id": id, "date": date, "sub_label": sub_label, "type": "TempLAMA"}
         else:
-            new_line = {"masked_sentences": [query], "obj_label": label, "id": id, "date": date, "sub_label": "TempLAMA"}
+            new_line = {"masked_sentences": [query], "obj_label": label, "id": id, "date": date, "sub_label": sub_label, "type": "TempLAMA"}
 
         
         json.dump(new_line, f)
@@ -90,9 +100,9 @@ def main():
     if args.filter_multi_word:
         output_file_counts.write(f"Here are the total counts: {total}\n")
         output_file_counts.write(f"Here are the num. of queries kept: {used}\n")
+        output_file_counts.close()
 
     f.close()
-    output_file_counts.close()
 
 
 if __name__ == "__main__":

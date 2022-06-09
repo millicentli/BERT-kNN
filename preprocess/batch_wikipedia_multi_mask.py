@@ -7,6 +7,7 @@ from nltk.corpus import stopwords
 import string
 import argparse
 import time
+import itertools
 from tqdm import tqdm
 
 from spacy.lang.en import English
@@ -72,6 +73,20 @@ def normalize(text):
     """Resolve different type of unicode encodings."""
     return unicodedata.normalize('NFD', text)
 
+def triplewise(iterable):
+    # pairwise('ABCDEFG') --> AB BC CD DE EF FG
+    a, b, c = itertools.tee(iterable, 3)
+    next(b, None)
+    next(c, None)
+    next(c, None)
+    return zip(a, b, c)
+
+def pairwise(iterable):
+    # pairwise('ABCDEFG') --> AB BC CD DE EF FG
+    a, b = itertools.tee(iterable)
+    next(b, None)
+    return zip(a, b)
+
 def main(path_drqa):
     num_dumps = 100
 
@@ -81,16 +96,18 @@ def main(path_drqa):
     db_ids = db.get_doc_ids()
     ids_per_dump = int(len(db_ids)/num_dumps) + 1
 
-    save_dir = "/private/home/millicentli/BERT-kNN/DrQA/data/test_multimasking_batched/"
+    save_dir = "/private/home/millicentli/BERT-kNN/DrQA/data/multimasking_and_multitokens/test_m_m/"
     save_file = save_dir + "dump_"
 
     if not os.path.exists(save_dir):
-        os.mkdir(save_dir)
+        os.makedirs(save_dir)
 
     save_files_sentences = {}
     save_files_labels = {}
     save_files_dbids = {}
+
     for n in range(num_dumps):
+    # 2, 3, 70
         if not os.path.exists(save_dir + str(n) + "_dbids.txt"):
             save_files_dbids[n] = open(save_file + str(n) + "_dbids.txt", "w")
             save_files_sentences[n] = open(save_file + str(n) + "_sentences.txt", "w")
@@ -101,7 +118,7 @@ def main(path_drqa):
 
     stop_words = set(stopwords.words('english'))
 
-    idx = 0 * ids_per_dump
+    idx = 70 * ids_per_dump
     end_idx = idx + ids_per_dump
 
     print("start masking!")
@@ -130,14 +147,32 @@ def main(path_drqa):
             for sentence in sentences:
                 sentence = sentence.strip()
                 tokens = tokenizer(sentence)
-                for idx, token in enumerate(tokens):
-                    token = token.string.strip().lower()
-                    if token in bert_tokenizer.vocab and token not in stop_words and token not in string.punctuation:
+                pairs = pairwise(tokens)
+                # triples = triplewise(tokens)
+                # for idx, (tok1, tok2, tok3) in enumerate(triples):
+                for idx, (tok1, tok2) in enumerate(pairs):
+                    tok1 = tok1.string.strip().lower()
+                    tok2 = tok2.string.strip().lower()
+                    # tok3 = tok3.string.strip().lower()
+                    if tok1 in bert_tokenizer.vocab and tok1 not in stop_words and tok1 not in string.punctuation \
+                        and tok2 in bert_tokenizer.vocab and tok2 not in stop_words and tok2 not in string.punctuation:
+                            # and tok3 in bert_tokenizer.vocab and tok3 not in stop_words and tok3 not in string.punctuation:
                         masked_sentences = \
-                            (" ".join([tokens[i].string.strip().lower() for i in range(idx)]) + " [MASK] " + " ".join([tokens[i].string.strip().lower() for i in range(idx + 1, len(tokens))]) + ".")
+                            (" ".join([tokens[i].string.strip().lower() for i in range(idx)]) + " [MASK] [MASK] " + " ".join([tokens[i].string.strip().lower() for i in range(idx + 3, len(tokens))]) + ".")
                         save_files_sentences[save_idx].write(masked_sentences)
                         save_files_sentences[save_idx].write("\n")
-                        save_files_labels[save_idx].write(token)
+                        save_files_labels[save_idx].write(f"{tok1} {tok2}")
+                        save_files_labels[save_idx].write("\n")
+                        save_files_dbids[save_idx].write(id)
+                        save_files_dbids[save_idx].write("\n")
+                for idx, tok in enumerate(tokens):
+                    tok = tok.string.strip().lower()
+                    if tok in bert_tokenizer.vocab and tok not in stop_words and tok not in string.punctuation:
+                        masked_sentences = \
+                            (" ".join([tokens[i].string.strip().lower() for i in range(idx)]) + " [MASK] " + " ".join([tokens[i].string.strip().lower() for i in range(idx + 3, len(tokens))]) + ".")
+                        save_files_sentences[save_idx].write(masked_sentences)
+                        save_files_sentences[save_idx].write("\n")
+                        save_files_labels[save_idx].write(f"{tok}")
                         save_files_labels[save_idx].write("\n")
                         save_files_dbids[save_idx].write(id)
                         save_files_dbids[save_idx].write("\n")
@@ -147,6 +182,7 @@ def main(path_drqa):
 
     id_dict = {}
     for d in range(len(db_ids) // ids_per_dump + 1):
+    # for d in [2, 3, 70]:
         with open(save_file + str(d) + "_dbids.txt") as f:
             idx = 0
             num_ent = 0

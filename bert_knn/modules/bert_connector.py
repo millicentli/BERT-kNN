@@ -354,6 +354,108 @@ class Bert(Base_Connector):
         hiddens_list = torch.squeeze(torch.stack(hiddens_list), 1).cpu()
         return logits_list, masked_indices_list, hiddens_list
 
+    def get_generation_multi_token_averaged(self, sentences_list, logger=None, try_cuda=True, k=100):
+        if not sentences_list:
+            return None
+        if try_cuda:
+            self.try_cuda()
+             
+        logits_list = []
+        masked_indices_list = []
+        hiddens_list = []
+        max_dim = -1
+        for sentence in sentences_list:
+            tokens_tensor, segments_tensor, attention_mask_tensor, masked_indices, tokenized_text = self.__get_input_tensors_multi_token(sentence)
+
+            if logger is not None:
+                logger.debug("\n{}\n".format(tokenized_text))
+
+            masked_indices_list.append(masked_indices)
+            tens_list = []
+            hidden_list = []
+            for idx, mask in enumerate(masked_indices):
+                if idx == 0:
+                    with torch.no_grad():
+                        outputs = self.masked_bert_model(
+                            input_ids=tokens_tensor.to(self._model_device),
+                            token_type_ids=segments_tensor.to(self._model_device),
+                            attention_mask=attention_mask_tensor.to(self._model_device),
+                        )
+                        predictions = outputs[0]
+                    
+                        _, sorted_idx = predictions[0].sort(dim=-1, descending=True)
+                        sorted_idx_sliced = sorted_idx[mask, :]
+                        best_cands = [sorted_idx_sliced[i].item() for i in range(k)]
+                        # breakpoint()
+                        hidden_sliced = outputs[-1][-2][:, mask, :]
+                        hidden_list.append(hidden_sliced)
+
+                        # best_pred_cands = [self.tokenizer.convert_ids_to_tokens(cand) for cand in best_cands]
+
+                        # Create 100 new sentences with the best options
+                        
+                        for cand in best_cands:
+                            new_tensor = tokens_tensor.clone().detach()
+                            new_tensor[:, mask] = cand
+                            tens_list.append(new_tensor)
+                else:
+                    # new_list = np.array(tens_list.copy()).to(self._model_device)
+                    if not torch.is_tensor(tens_list):
+                        inputs = torch.stack(tens_list).squeeze().to(self._model_device)
+                        with torch.no_grad():
+                            outputs = self.masked_bert_model(inputs)
+                        tens_list.clear()
+                    else:
+                        with torch.no_grad():
+                            outputs = self.masked_bert_model(inputs)
+                    predictions = outputs[0]
+                    
+                    # breakpoint()
+                    hidden_sliced = outputs[-1][-2][:, mask, :]
+                    hidden_list.append(hidden_sliced)
+
+                    for i in range(len(predictions)):
+                        _, sorted_idx = predictions[i].sort(dim=-1, descending=True)
+                        sorted_idx_sliced = sorted_idx[mask, :]
+                        best_cand = sorted_idx_sliced[0].item()
+
+                        
+                        # new_tensor = inputs[i].clone().detach()
+                        inputs[i, mask] = best_cand
+
+                    tens_list = inputs
+
+            logits = outputs[0].log_softmax(-1)
+            scores = torch.gather(logits, 2, tens_list[:, :, None]).squeeze(-1)
+            unique_scores = scores.sum(-1)
+
+            _, sorted_idx = unique_scores.sort(descending=True)
+
+
+            # Sanity checking
+            # for idx, i in enumerate(sorted_idx):
+            #     print(f"Top {idx}: {tens_list[i]}")
+            #     print("Checking the decoding:", self.tokenizer.decode(tens_list[i]))
+
+            # Just add the best one
+            best_sent = outputs[0][sorted_idx[0], :, :]
+            masked_output = best_sent[np.array(masked_indices).flatten()]
+            masked_output = torch.softmax(masked_output, dim=-1).cpu()
+            logits_list.append(masked_output)
+            for idx in range(1, len(hidden_list)):
+                hidden_list[idx] = torch.unsqueeze(hidden_list[idx][sorted_idx[0]], 0)
+
+            # Do some averaging
+            # best_hidden = torch.squeeze(torch.stack(hidden_list, 0))
+            best_hidden = torch.squeeze(torch.stack(hidden_list), dim=0)
+            best_hidden = torch.mean(best_hidden, dim=0)
+            hiddens_list.append(best_hidden)
+
+            max_dim = max(max_dim, len(best_hidden))
+
+        hiddens_list = [torch.cat((l, torch.full((max_dim - len(l), 768), -100).cuda()), 0) if len(l) < max_dim else l for l in hiddens_list]
+        hiddens_list = torch.squeeze(torch.stack(hiddens_list), 1).cpu()
+        return logits_list, masked_indices_list, hiddens_list
 
     def get_contextual_embeddings(self, sentences_list, try_cuda=True):
 

@@ -310,6 +310,10 @@ def main(args, ranker=None, labels_dict_id=None, labels_dict=None,
     # data = [{'masked_sentences': ['Ronaldo plays for [MASK].'], 'obj_label': 'brazil national football team', 'id': 'Q529207_P54_2010', 'date': '2010', 'sub_label': 'templama', 'uuid': 72}]
     # data = [{"masked_sentences": ["Tom Brady plays for [MASK]."], "obj_label": "New England Patriots", "id": "Q313381_P54_2010", "date": "2010", "sub_label": "Tom Brady", "type": "TempLAMA"}]
 
+    # TempLAMA multi test
+    # data = [{'masked_sentences': ['Ronaldo plays for [MASK].'], 'obj_label': 'brazil national football team', 'id': 'Q529207_P54_2010', 'date': '2010', 'sub_label': 'templama', 'uuid': 72}]
+    data = [{'masked_sentences': ['Peyton Manning plays for [MASK].'], 'obj_label': 'Denver Broncos', 'id': '1', 'date': '2015', 'sub_label': 'templama', 'uuid': '72', 'type': 'templama'}]
+    # breakpoint()
     if args.lowercase:
         # lowercase all samples
         logger.info("lowercasing all samples...")
@@ -364,7 +368,7 @@ def main(args, ranker=None, labels_dict_id=None, labels_dict=None,
     if num_threads <= 0:
         # use all available threads
         num_threads = multiprocessing.cpu_count()
-    # num_threads = 1
+    num_threads = 1
     pool = ThreadPool(num_threads)
     list_of_results = []
 
@@ -379,7 +383,7 @@ def main(args, ranker=None, labels_dict_id=None, labels_dict=None,
             log_probs_list, masked_indices_list = model.get_batch_generation(sentences_b, logger=logger, try_cuda=True)
         else:
             # If templama?
-            log_probs_list, masked_indices_list, pooled_output = model.get_generation_multi_token(sentences_b, logger=logger, try_cuda=True)
+            log_probs_list, masked_indices_list, pooled_output = model.get_generation_multi_token_averaged(sentences_b, logger=logger, try_cuda=True)
 
         xq = sanitize(pooled_output)
 
@@ -394,8 +398,6 @@ def main(args, ranker=None, labels_dict_id=None, labels_dict=None,
                         sample["obj_label"]
                     )
                 )
-            # in_vocab = [model.vocab[obj_label_id[i]] for i in obj_label_id]
-
             # Multi-tokens are OK!
             in_vocab = [i < len(model.vocab) for i in obj_label_id]
             if not all(in_vocab):
