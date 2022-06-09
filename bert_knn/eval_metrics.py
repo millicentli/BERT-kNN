@@ -82,7 +82,7 @@ def interpolate(distances, labels, predictions, topk=10):
     d = predictions.shape[1] + max_size + 1
     probs_vocab_nn = torch.zeros(d)
     probs_vocab_bert = torch.zeros(d)
-    breakpoint()
+
     mappings = {}
     # Calculate nn probs, bert probs here
     for p in unique_predictions:
@@ -94,8 +94,9 @@ def interpolate(distances, labels, predictions, topk=10):
             probs_vocab_nn[predictions.shape[1] + p[0] + p[1] * 2] = sum(normalized_distances[0][0][idcs_unique])
             # TODO: this is really dummy, it just takes the probability of the first token as the combined prob
             idx = (vocab_idcs_bert[0] == p[0]).nonzero(as_tuple=True)[0].item()
+            idx2 = (vocab_idcs_bert[0] == p[1]).nonzero(as_tuple=True)[0].item()
             # idx2 = (vocab_idcs_bert[1] == p[1]).nonzero(as_tuple=True)[0].item() 
-            probs_vocab_bert[predictions.shape[1] + p[0] + p[1] * 2] = vocab_idcs_bert[0][idx]
+            probs_vocab_bert[predictions.shape[1] + p[0] + p[1] * 2] = vocab_idcs_bert[0][idx] * vocab_idcs_bert[0][idx2]
             mappings[predictions.shape[1] + p[0] + p[1] * 2] = p
         # probs = 0.0
         # indices = []
@@ -145,10 +146,11 @@ def get_ranking(predictions, log_probs, sample, vocab, ranker, labels_dict_id, l
 
     # path_vectors = "/private/home/millicentli/BERT-kNN/DrQA/data/vectors/vectors_dump_"
     path_vectors = "/private/home/millicentli/BERT-kNN/DrQA/data/test_multimasking_stuff/vectors/vectors_dump_"
-    breakpoint()
+
     N = 128
     num_ids = 3
     d = 768
+    breakpoint()
     if "sub_label" in sample:
         if sample["sub_label"] == "squad" or sample["sub_label"] == "templama":
             query = sample["masked_sentences"][0]
@@ -269,6 +271,7 @@ def get_ranking(predictions, log_probs, sample, vocab, ranker, labels_dict_id, l
                     probabilities_bert.append([pred])
                 else:
                     probabilities_bert[idx].append(pred)
+
     experiment_result["topk_bert"] = predictions_bert
     experiment_result["topk_combined"] = predictions_combined
     experiment_result["topk_nn"] = predictions_nn
@@ -285,8 +288,6 @@ def get_ranking(predictions, log_probs, sample, vocab, ranker, labels_dict_id, l
     experiment_result["all_labels"] = label_tokens
     experiment_result["sample"] = sample["masked_sentences"]
     experiment_result["answer"] = sample["obj_label"]
-    # experiment_result["generated_bert"] = ' '.join(topk_all[0])
-    # experiment_result["generated_combined"] = ' '.join(topk_all[1])
-    # experiment_result["generated_nn"] = ' '.join(topk_all[2])
+
     print("Here's experiment_result:", experiment_result)
     return experiment_result, return_msg
