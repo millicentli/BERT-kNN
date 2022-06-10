@@ -6,6 +6,11 @@ BERT_UNK = "[UNK]"
 BERT_CLS = "[CLS]"
 BERT_SEP = "[SEP]"
 BERT_PAD = "[PAD]"
+ROBERTA_MASK = "<mask>"
+ROBERTA_UNK = "<unk>"
+ROBERTA_CLS = "<s>"
+ROBERTA_SEP = "</s>"
+ROBERTA_PAD = "<pad>"
 
 SPECIAL_SYMBOLS = [
     MASK,
@@ -13,7 +18,11 @@ SPECIAL_SYMBOLS = [
     BERT_CLS,
     BERT_SEP,
     BERT_PAD,
-    ]
+    ROBERTA_UNK,
+    ROBERTA_CLS,
+    ROBERTA_SEP,
+    ROBERTA_PAD,
+]
 
 SPACE_NORMALIZER = re.compile(r"\s+")
 

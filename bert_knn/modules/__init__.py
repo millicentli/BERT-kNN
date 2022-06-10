@@ -1,4 +1,5 @@
 from .bert_connector import Bert
+from .roberta_connector import Roberta
 
 
 def build_model_by_name(lm, args, verbose=True):
@@ -8,7 +9,8 @@ def build_model_by_name(lm, args, verbose=True):
     model's initializator.
     """
     MODEL_NAME_TO_CLASS = dict(
-        bert=Bert
+        bert=Bert,
+        roberta=Roberta,
     )
     if lm not in MODEL_NAME_TO_CLASS:
         raise ValueError("Unrecognized Language Model: %s." % lm)

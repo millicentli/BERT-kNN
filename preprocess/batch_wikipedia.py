@@ -86,6 +86,8 @@ def masking(args):
 
     if model_type == "BERT":
         transformer_tok = transformers.BertTokenizer.from_pretrained("bert-base-uncased")
+    elif model_type == "ROBERTA":
+        transformer_tok = transformers.RobertaTokenizer.from_pretrained("roberta-base")
     else:
         transformer_tok = transformers.T5Tokenizer.from_pretrained("t5-base")
     
@@ -147,8 +149,8 @@ def masking(args):
 def main(args):
     num_dumps = 100
 
-    if not args.bert and not args.t5:
-        raise ValueError("Either BERT must be selected or T5 must be selected!")
+    if not args.bert and not args.t5 and not args.roberta:
+        raise ValueError("Either BERT must be selected, RoBERTa must be selected, or T5 must be selected!")
 
     # wikipedia data base
     path_db = args.path_db_wikipedia_drqa
@@ -160,6 +162,10 @@ def main(args):
         save_dir = "/private/home/millicentli/BERT-kNN/DrQA/data/wikidump_batched_bert/"
         save_file = save_dir + "dump_"
         model_type = "BERT"
+    elif args.roberta:
+        save_dir = "/private/home/millicentli/BERT-kNN/DrQA/data/wikidump_batched_roberta/"
+        save_file = save_dir + "dump_"
+        model_type = "RoBERTa"
     else:
         save_dir = "/private/home/millicentli/BERT-kNN/DrQA/data/wikidump_batched_t5/"
         save_file = save_dir + "dump_"
@@ -171,15 +177,15 @@ def main(args):
     save_files_sentences = {}
     save_files_labels = {}
     save_files_dbids = {}
-    # for n in range(len(db_ids) // ids_per_dump + 1):
-        # if not os.path.exists(save_dir + str(n) + "_dbids.txt"):
-        #     save_files_dbids[n] = open(save_file + str(n) + "_dbids.txt", "w")
-        #     save_files_sentences[n] = open(save_file + str(n) + "_sentences.txt", "w")
-        #     save_files_labels[n] = open(save_file + str(n) + "_labels.txt", "w")
-    if not os.path.exists(save_dir + str(99) + "_dbids.txt"):
-        save_files_dbids[99] = open(save_file + str(99) + "_dbids.txt", "w")
-        save_files_sentences[99] = open(save_file + str(99) + "_sentences.txt", "w")
-        save_files_labels[99] = open(save_file + str(99) + "_labels.txt", "w")
+    for n in range(len(db_ids) // ids_per_dump + 1):
+        if not os.path.exists(save_dir + str(n) + "_dbids.txt"):
+            save_files_dbids[n] = open(save_file + str(n) + "_dbids.txt", "w")
+            save_files_sentences[n] = open(save_file + str(n) + "_sentences.txt", "w")
+            save_files_labels[n] = open(save_file + str(n) + "_labels.txt", "w")
+    # if not os.path.exists(save_dir + str(99) + "_dbids.txt"):
+    #     save_files_dbids[99] = open(save_file + str(99) + "_dbids.txt", "w")
+    #     save_files_sentences[99] = open(save_file + str(99) + "_sentences.txt", "w")
+    #     save_files_labels[99] = open(save_file + str(99) + "_labels.txt", "w")
 
     stop_words = set(stopwords.words('english'))
 
@@ -188,35 +194,35 @@ def main(args):
     # Cap it at half the number of dumps for efficiency
     if num_threads > 50:
         num_threads = 50
-    num_threads = 1
+    # num_threads = 1
     pool = ThreadPool(num_threads)
 
     print(f"Starting multithreading with {num_threads} threads")
     print("Start masking!")
 
-    # args = [{
-    #     "db": db,
-    #     "db_ids": db_ids,
-    #     "save_idx": idx,
-    #     "ids_per_dump": ids_per_dump,
-    #     "stop_words": stop_words,
-    #     "save_files_sentences": save_files_sentences[idx],
-    #     "save_files_labels": save_files_labels[idx],
-    #     "save_files_dbids": save_files_dbids[idx],
-    #     "model_type": model_type
-    # } for idx in range(len(db_ids) // ids_per_dump + 1)]
-    
     args = [{
         "db": db,
         "db_ids": db_ids,
-        "save_idx": 99,
+        "save_idx": idx,
         "ids_per_dump": ids_per_dump,
         "stop_words": stop_words,
-        "save_files_sentences": save_files_sentences[99],
-        "save_files_labels": save_files_labels[99],
-        "save_files_dbids": save_files_dbids[99],
+        "save_files_sentences": save_files_sentences[idx],
+        "save_files_labels": save_files_labels[idx],
+        "save_files_dbids": save_files_dbids[idx],
         "model_type": model_type
-    }]
+    } for idx in range(len(db_ids) // ids_per_dump + 1)]
+    
+    # args = [{
+    #     "db": db,
+    #     "db_ids": db_ids,
+    #     "save_idx": 99,
+    #     "ids_per_dump": ids_per_dump,
+    #     "stop_words": stop_words,
+    #     "save_files_sentences": save_files_sentences[99],
+    #     "save_files_labels": save_files_labels[99],
+    #     "save_files_dbids": save_files_dbids[99],
+    #     "model_type": model_type
+    # }]
 
     pool.map(masking, args)
 
@@ -257,6 +263,10 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--t5",
+        action="store_true"
+    )
+    parser.add_argument(
+        "--roberta",
         action="store_true"
     )
     args = parser.parse_args()
